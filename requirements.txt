@@ -1,0 +1,15 @@
+# Spell checking
+pyspellchecker==0.8.3
+
+# LangChain for agent framework
+langchain
+langchain-core
+langchain-ollama
+langchain-huggingface
+
+# Model fine-tuning
+unsloth
+transformers
+trl
+peft
+datasets
