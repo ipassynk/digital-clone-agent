@@ -44,3 +44,13 @@ python run.py
 - RAG retrieval: Top 2 documents (k=2)
 - Evaluation threshold: 0.75
 - Style profile: Loaded from `style_summary.txt` for personalized responses
+
+## TODO
+
+- Switch to Qdrant vector database
+- Improve calendar integration (support recurring events, different calendar providers)
+- Add a chatbot frontend
+- Enhance error handling and logging for all agents
+- Add unit and integration tests
+- Parameterize model, embedding, and threshold settings via config file or environment variables
+- Support for multi-user sessions
