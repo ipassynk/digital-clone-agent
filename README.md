@@ -26,6 +26,15 @@ The system consists of four specialized agents orchestrated by a planning agent:
 - **RAG Agent**: HuggingFaceH4/zephyr-7b-beta (4-bit quantized)
 - **Embeddings**: nomic-embed-text via Ollama
 
+## Cal integration
+The agent is able to call cal.com and book appointments.
+
+Example output:
+```
+The team meeting for John Doe has been scheduled for tomorrow at 7pm. The meeting URL is https://app.cal.com/video/cYCtPagE3D6v5x9XTJZurN, and the location is also available on this link. The meeting duration is 30 minutes, and it will take place from 7pm to 7:30pm tomorrow night.
+```
+
+
 ## Usage
 
 ```bash
@@ -54,3 +63,5 @@ python run.py
 - Add unit and integration tests
 - Parameterize model, embedding, and threshold settings via config file or environment variables
 - Support for multi-user sessions
+- Add schema for Eval_agent output with_structured_output. Look https://docs.langchain.com/oss/python/langgraph/agentic-rag#4-grade-documents
+- Switch to LangGraph
