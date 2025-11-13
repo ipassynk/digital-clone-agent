@@ -87,6 +87,7 @@ class DigitalCloneState(TypedDict):
 ## Environment Variables
 
 - `FIRECRAWL_API_KEY`: Required for web document crawling
+- `CAL_API_KEY`: Required for integration with CAL.com
 - `OPENAI_API_KEY`: Required for LLM and embeddings
 
 ## Usage
