@@ -88,6 +88,8 @@ class DigitalCloneState(TypedDict):
 
 - `FIRECRAWL_API_KEY`: Required for web document crawling
 - `CAL_API_KEY`: Required for integration with CAL.com
+- `CAL_USERNAME`: Required for integration with CAL.com
+- `QDRANT_API_KEY`: Required for integration with qdrant
 - `OPENAI_API_KEY`: Required for LLM and embeddings
 
 ## Usage
