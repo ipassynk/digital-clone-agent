@@ -2,6 +2,30 @@
 
 A LangGraph-based agent system that provides automated responses to educational questions with quality evaluation and human-in-the-loop meeting scheduling capabilities.
 
+
+## Result with booking
+
+<pre>
+Question: My son struggles with tennis shots, what should I do?
+
+Action: schedule_meeting
+Please provide your decision:
+The agent can't answer the question. We need to schedule a meeting with teacher. Please approve this meeting. (yes/no): yes
+Enter user name: Anna Banana
+Enter email: anna@banana.com
+Enter meeting time (format: 1 Dec 2025 20:00PM): 15 Nov 2025 11:00AM
+Checking availability for 2025-11-15T11:00:00
+Booking meeting for 2025-11-15T11:00:00 with Anna Banana at anna@banana.com
+
+Question: My son struggles with tennis shots, what should I do?
+
+Booking Details: Meeting booked for 2025-11-15T11:00:00 with Anna Banana at anna@banana.com
+
+Teacher will address your question in the meeting.
+</pre>
+
+![Appointment](appointment.png)
+
 ## Architecture
 
 The agent implements a state machine workflow using LangGraph, processing user questions through document retrieval, response generation, evaluation, and conditional meeting scheduling.
@@ -70,4 +94,5 @@ class DigitalCloneState(TypedDict):
 ## Usage
 
 The agent processes questions through the workflow graph, automatically handling interrupts for human review when response quality is insufficient or meeting scheduling is required. The graph visualization is generated on execution and saved to `digital_clone_visualization.png`.
+
 
