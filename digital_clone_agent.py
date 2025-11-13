@@ -1,9 +1,11 @@
 import os
 import random
+from datetime import datetime, timedelta
 from typing import Literal, TypedDict, Set
 from uuid import uuid4
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
+from langsmith.utils import P
 import markdown
 from langchain_core.documents import Document
 from langchain_core.runnables import graph
@@ -21,8 +23,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.firecrawl import FireCrawlLoader
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
+import requests
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 api_key = os.getenv("FIRECRAWL_API_KEY")
+cal_api_key = os.getenv("CAL_API_KEY")
+event_type_id = os.getenv("CAL_EVENT_TYPE_ID")
+data_source_url = "https://www.fishtanklearning.org/curriculum/math/5th-grade"
+
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
@@ -40,7 +49,6 @@ class DigitalCloneState(TypedDict):
 
 class Evaluation(TypedDict):
     score: float
-    reason: str
 
 
 def markdown_to_text(markdown_string):
@@ -48,6 +56,36 @@ def markdown_to_text(markdown_string):
     html = markdown.markdown(markdown_string)
     soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
+
+
+def convert_user_time_to_iso(user_input: str) -> str:
+    """Convert user input time format '1 Jun 2026 17:00PM' to ISO format
+
+    Supports formats:
+    - '1 Jun 2026 17:00PM' (24-hour with AM/PM)
+    - '1 Jun 2026 5:00PM' (12-hour with AM/PM)
+    """
+    user_input = user_input.strip()
+
+    # Try 24-hour format with AM/PM first (e.g., "1 Jun 2026 17:00PM")
+    try:
+        dt = datetime.strptime(user_input, "%d %b %Y %H:%M%p")
+        return dt.isoformat()
+    except ValueError:
+        pass
+
+    # Try 12-hour format with AM/PM (e.g., "1 Jun 2026 5:00PM")
+    try:
+        dt = datetime.strptime(user_input, "%d %b %Y %I:%M%p")
+        return dt.isoformat()
+    except ValueError:
+        pass
+
+    # If parsing fails, return the original input (might already be in ISO format)
+    print(
+        f"Warning: Could not parse time format '{user_input}'. Expected format: '1 Jun 2026 17:00PM'"
+    )
+    return user_input
 
 
 def retrive_documents(state: DigitalCloneState):
@@ -74,7 +112,7 @@ def retrive_documents(state: DigitalCloneState):
         }
 
         loader = FireCrawlLoader(
-            url="https://www.fishtanklearning.org/curriculum/math/5th-grade",
+            url=data_source_url,
             api_key=api_key,
             mode="crawl",
             params=params,
@@ -169,7 +207,6 @@ Remember: Use ONLY the information from the provided documents above. If the doc
 """
 
     response = llm.invoke(prompt)
-    print(f"Response: {response.content}")
     return {"response": response.content}
 
 
@@ -224,7 +261,7 @@ def human_review(state: DigitalCloneState):
     human_decision = interrupt(
         {
             "action": "schedule_meeting",
-            "message": "We need to schedule a meeting with teacher. Please approve this meeting.",
+            "message": "The agent can't answer the question. We need to schedule a meeting with teacher. Please approve this meeting.",
             "user_name": state.get("user_name", ""),
             "email": state.get("email", ""),
             "documents": state.get("documents", []),
@@ -243,15 +280,77 @@ def human_review(state: DigitalCloneState):
 
 def get_availability(state: DigitalCloneState):
     """Get the availability of the teacher"""
-    random_availability = random.choice([True, False])
-    return {"availability": random_availability}
+
+    meeting_time = state.get("meeting_time", "")
+   
+    # TODO handle slots in the response. Suggest other slots if the requested time is not available.
+    try:
+        print(f"Checking availability for {meeting_time}")
+        start = meeting_time.split("T")[0]
+        end = (datetime.fromisoformat(meeting_time) + timedelta(days=1)).isoformat().split("T")[0]
+
+        url = "https://api.cal.com/v2/slots"
+        headers = {
+            "Authorization": f"Bearer {cal_api_key}",
+            "cal-api-version": "2024-09-04",
+        }
+        params = {"eventTypeId": int(event_type_id), "start": start, "end": end}
+        #print(f"Availability request params: {params}")
+        response = requests.get(url, headers=headers, params=params)
+        res = response.json()
+        #print(f"Availability response: {res}")
+        availability = len(res.get("data", [])) > 0
+    except Exception as e:
+        print(f"!!! Error checking availability: {e}")
+        availability = False
+
+    return {"availability": availability}
 
 
 def book_meeting(state: DigitalCloneState):
     """Book a meeting"""
-    return {
-        "booking_details": f"Meeting booked for {state.get('meeting_time')} with {state.get('user_name')} at {state.get('email')}"
-    }
+
+    book_url = "https://api.cal.com/v2/bookings"
+    meeting_time = state.get("meeting_time", "")
+    email = state.get("email", "")
+    name = state.get("user_name", "")
+    timezone = os.getenv("USER_TIMEZONE", "UTC")
+
+    #convert local time in format 2025-12-01T20:00:00 to 2025-12-01T20:00:00Z format
+    local_dt = datetime.fromisoformat(meeting_time).replace(tzinfo=ZoneInfo("America/Toronto"))
+    start = local_dt.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        print(f"Booking meeting for {meeting_time} with {name} at {email}")
+        payload = {
+            "eventTypeId": int(event_type_id),
+            "start": start,
+            "attendee": {"email": email, "name": name, "timeZone": timezone},
+            "metadata": {
+                "title": "Booking from calendar agent",
+                "description": f"Meeting with {name} regarding: {state.get('question', 'General inquiry')}",
+            },
+        }
+        headers = {
+            "Authorization": f"Bearer {cal_api_key}",
+            "cal-api-version": "2024-08-13",
+            "Content-Type": "application/json",
+        }
+        #print(f"Booking request payload: {payload}")
+        resp = requests.post(book_url, headers=headers, json=payload)
+        ret = resp.json()
+        #print(f"Booking response: {ret}")
+        if ret.get("status") == "success":
+            return {
+                "booking_details": f"Meeting booked for {state.get('meeting_time')} with {state.get('user_name')} at {state.get('email')}"
+            }
+        else:
+            # may be handle errors here
+            print(f"Error booking meeting: {ret.get('error')}")
+            return {"booking_details": None}
+    except Exception as e:
+        print(f"!!!Error booking meeting: {e}")
+        return {"booking_details": None}
 
 
 def check_score(state: DigitalCloneState):
@@ -279,7 +378,7 @@ def ask_for_new_time(state: DigitalCloneState):
             "user_name": state.get("user_name", ""),
             "email": state.get("email", ""),
             "documents": state.get("documents", []),
-            "meeting_time": state.get("meeting_time", "")
+            "meeting_time": state.get("meeting_time", ""),
         }
     )
     if new_time.get("reject"):
@@ -291,9 +390,30 @@ def ask_for_new_time(state: DigitalCloneState):
 def route_after_new_time(state: DigitalCloneState):
     """Route after asking for new time"""
     if state.get("meeting_time"):
-        return "book_meeting"
+        return "get_availability"
     else:
         return "end"
+
+
+def print_formatted_result(result: dict):
+    """Print formatted result: question, booking details if available, and response based on score"""
+
+    if "question" in result and result["question"]:
+        print(f"\nQuestion: {result['question']}")
+
+    if "booking_details" in result and result["booking_details"]:
+        print(f"\nBooking Details: {result['booking_details']}")
+
+    score = result.get("score", 0.0)
+    if score > 0.5:
+        if "response" in result and result["response"]:
+            print(f"\nResponse: {result['response']}")
+    elif result.get("booking_details"):
+        print("\nTeacher will address your question in the meeting.")
+    else:
+        print(
+            "\nSorry no answer you need to book a meeting with teacher to address your question."
+        )
 
 
 workflow = StateGraph(DigitalCloneState)
@@ -324,7 +444,7 @@ workflow.add_conditional_edges(
 workflow.add_conditional_edges(
     "ask_for_new_time",
     route_after_new_time,
-    {"book_meeting": "book_meeting", "end": END},
+    {"get_availability": "get_availability", "end": END},
 )
 workflow.add_edge("book_meeting", END)
 
@@ -332,121 +452,69 @@ graph = workflow.compile(checkpointer=MemorySaver())
 graph_image = graph.get_graph(xray=True).draw_mermaid_png()
 with open("digital_clone_visualization.png", "wb") as f:
     f.write(graph_image)
-print("Graph visualization saved to 'digital_clone_visualization.png'")
+# print("Graph visualization saved to 'digital_clone_visualization.png'")
 
 config = {"configurable": {"thread_id": "digital_clone_1"}}
 result = graph.invoke(
     {"question": "My son struggles with tennis shots, what should I do?"}, config=config
 )
-print(result)
 
-
-if "__interrupt__" in result:
-    print("\n" + "="*50)
+# Loop to handle multiple interrupts
+current_result = result
+while "__interrupt__" in current_result:
+    print("\n" + "=" * 50)
     print("HUMAN REVIEW REQUIRED")
-    print("="*50)
-    interrupt_data = result["__interrupt__"][0].value
-    action = interrupt_data.get('action', 'unknown')
-    message = interrupt_data.get('message', 'Review required')
-    
+    print("=" * 50)
+    interrupt_data = current_result["__interrupt__"][0].value
+    action = interrupt_data.get("action", "unknown")
+    message = interrupt_data.get("message", "Review required")
+
+    print(f"\nQuestion: {current_result['question']}")
     print(f"\nAction: {action}")
-    print(f"Message: {message}")
-    print(f"\nDocuments: {len(interrupt_data.get('documents', []))} documents retrieved")
-    
-    # Handle different interrupt types
+
     if action == "schedule_meeting":
         # Prompt for human input for scheduling meeting
-        print("\nPlease provide your decision:")
+        print("Please provide your decision:")
         approved = input(f"{message} (yes/no): ").lower().strip() == "yes"
-        
+
         if approved:
             user_name = input("Enter user name: ").strip()
             email = input("Enter email: ").strip()
-            meeting_time = input("Enter meeting time: ").strip()
-            
+            meeting_time_input = input(
+                "Enter meeting time (format: 1 Dec 2025 20:00PM): "
+            ).strip()
+            meeting_time = convert_user_time_to_iso(meeting_time_input)
+
             # Resume with human input
             human_response = Command(
                 resume={
                     "approved": True,
                     "user_name": user_name,
                     "email": email,
-                    "meeting_time": meeting_time
+                    "meeting_time": meeting_time,
                 }
             )
         else:
-            human_response = Command(
-                resume={
-                    "approved": False
-                }
-            )
-    
+            human_response = Command(resume={"approved": False})
+
     elif action == "ask_new_time":
         # Prompt for new time
-        print("\nPlease provide a new meeting time:")
-        new_time = input(f"{message}\nEnter new meeting time (or 'reject' to cancel): ").strip()
-        
-        if new_time.lower() == "reject":
-            human_response = Command(
-                resume={
-                    "reject": True
-                }
-            )
+        print("Please provide a new meeting time:")
+        new_time_input = input(
+            f"{message}\nEnter new meeting time (format: 1 Dec 2025 20:00PM) or 'reject' to cancel: "
+        ).strip()
+
+        if new_time_input.lower() == "reject":
+            human_response = Command(resume={"reject": True})
         else:
-            human_response = Command(
-                resume={
-                    "reject": False,
-                    "new_time": new_time
-                }
-            )
-    
+            new_time = convert_user_time_to_iso(new_time_input)
+            human_response = Command(resume={"reject": False, "new_time": new_time})
+
     else:
-        # Fallback for unknown interrupt types
         print(f"\nUnknown interrupt action: {action}")
         human_response = Command(resume={})
-    
-    # Resume execution
-    final_result = graph.invoke(human_response, config=config)
-    print("\nFinal result:", final_result)
-    
-    # Check if there's another interrupt (for chained interrupts)
-    while "__interrupt__" in final_result:
-        interrupt_data = final_result["__interrupt__"][0].value
-        action = interrupt_data.get('action', 'unknown')
-        message = interrupt_data.get('message', 'Review required')
-        
-        print("\n" + "="*50)
-        print("HUMAN REVIEW REQUIRED (Continued)")
-        print("="*50)
-        print(f"\nAction: {action}")
-        print(f"Message: {message}")
-        
-        if action == "schedule_meeting":
-            approved = input(f"{message} (yes/no): ").lower().strip() == "yes"
-            if approved:
-                user_name = input("Enter user name: ").strip()
-                email = input("Enter email: ").strip()
-                meeting_time = input("Enter meeting time: ").strip()
-                human_response = Command(
-                    resume={
-                        "approved": True,
-                        "user_name": user_name,
-                        "email": email,
-                        "meeting_time": meeting_time
-                    }
-                )
-            else:
-                human_response = Command(resume={"approved": False})
-        
-        elif action == "ask_new_time":
-            new_time = input(f"{message}\nEnter new meeting time (or 'reject' to cancel): ").strip()
-            if new_time.lower() == "reject":
-                human_response = Command(resume={"reject": True})
-            else:
-                human_response = Command(resume={"reject": False, "new_time": new_time})
-        else:
-            human_response = Command(resume={})
-        
-        final_result = graph.invoke(human_response, config=config)
-        print("\nFinal result:", final_result)
-else:
-    print("Result:", result)
+
+    # Resume execution and check for next interrupt
+    current_result = graph.invoke(human_response, config=config)
+
+print_formatted_result(current_result)
