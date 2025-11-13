@@ -83,6 +83,7 @@ class DigitalCloneState(TypedDict):
 - qdrant-client
 - langchain-qdrant
 - firecrawl-py
+- langfuse
 
 ## Environment Variables
 
@@ -95,5 +96,6 @@ class DigitalCloneState(TypedDict):
 ## Usage
 
 The agent processes questions through the workflow graph, automatically handling interrupts for human review when response quality is insufficient or meeting scheduling is required. The graph visualization is generated on execution and saved to `digital_clone_visualization.png`.
+
 
 

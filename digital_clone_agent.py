@@ -26,6 +26,7 @@ from langgraph.types import Command
 import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from langfuse.langchain import CallbackHandler
 
 api_key = os.getenv("FIRECRAWL_API_KEY")
 cal_api_key = os.getenv("CAL_API_KEY")
@@ -33,7 +34,7 @@ event_type_id = os.getenv("CAL_EVENT_TYPE_ID")
 data_source_url = "https://www.fishtanklearning.org/curriculum/math/5th-grade"
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-
+langfuse_handler = CallbackHandler()
 
 class DigitalCloneState(TypedDict):
     user_name: str
@@ -206,13 +207,12 @@ Communication style guidelines:
 Remember: Use ONLY the information from the provided documents above. If the documents don't contain relevant information for a math question, say so. If the question is not about math, politely decline to answer.
 """
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(prompt, config={"callbacks": [langfuse_handler]})
     return {"response": response.content}
 
 
 def evaluate_response(state: DigitalCloneState):
     """Evaluate the response"""
-
     eval_prompt = f"""You are an evaluation agent that scores RAG responses. 
 
     here is the question:
@@ -247,7 +247,7 @@ def evaluate_response(state: DigitalCloneState):
     """
 
     llm_structured = llm.with_structured_output(Evaluation)
-    evaluation = llm_structured.invoke(eval_prompt)
+    evaluation = llm_structured.invoke(eval_prompt, config={"callbacks": [langfuse_handler]})
     score = (
         0.4 * evaluation["StyleScore"]
         + 0.4 * evaluation["Groundedness"]
@@ -269,18 +269,18 @@ def human_review(state: DigitalCloneState):
         }
     )
     if human_decision.get("approved"):
-        return {
+        result = {
             "meeting_time": human_decision.get("meeting_time"),
             "user_name": human_decision.get("user_name"),
             "email": human_decision.get("email"),
         }
+        return result
     else:
         return {"meeting_time": None, "user_name": None, "email": None}
 
 
 def get_availability(state: DigitalCloneState):
     """Get the availability of the teacher"""
-
     meeting_time = state.get("meeting_time", "")
    
     # TODO handle slots in the response. Suggest other slots if the requested time is not available.
@@ -303,13 +303,13 @@ def get_availability(state: DigitalCloneState):
     except Exception as e:
         print(f"!!! Error checking availability: {e}")
         availability = False
+        return {"availability": availability}
 
     return {"availability": availability}
 
 
 def book_meeting(state: DigitalCloneState):
     """Book a meeting"""
-
     book_url = "https://api.cal.com/v2/bookings"
     meeting_time = state.get("meeting_time", "")
     email = state.get("email", "")
@@ -341,12 +341,12 @@ def book_meeting(state: DigitalCloneState):
         ret = resp.json()
         #print(f"Booking response: {ret}")
         if ret.get("status") == "success":
-            return {
-                "booking_details": f"Meeting booked for {state.get('meeting_time')} with {state.get('user_name')} at {state.get('email')}"
-            }
+            booking_details = f"Meeting booked for {state.get('meeting_time')} with {state.get('user_name')} at {state.get('email')}"
+            return {"booking_details": booking_details}
         else:
             # may be handle errors here
-            print(f"Error booking meeting: {ret.get('error')}")
+            error_msg = ret.get('error', 'Unknown error')
+            print(f"Error booking meeting: {error_msg}")
             return {"booking_details": None}
     except Exception as e:
         print(f"!!!Error booking meeting: {e}")
@@ -384,7 +384,8 @@ def ask_for_new_time(state: DigitalCloneState):
     if new_time.get("reject"):
         return {"meeting_time": None}
     else:
-        return {"meeting_time": new_time.get("new_time")}
+        new_meeting_time = new_time.get("new_time")
+        return {"meeting_time": new_meeting_time}
 
 
 def route_after_new_time(state: DigitalCloneState):
@@ -454,7 +455,7 @@ with open("digital_clone_visualization.png", "wb") as f:
     f.write(graph_image)
 # print("Graph visualization saved to 'digital_clone_visualization.png'")
 
-config = {"configurable": {"thread_id": "digital_clone_1"}}
+config = {"configurable": {"thread_id": "digital_clone_1", "callbacks": [langfuse_handler]}}
 result = graph.invoke(
     {"question": "My son struggles with tennis shots, what should I do?"}, config=config
 )
@@ -516,5 +517,6 @@ while "__interrupt__" in current_result:
 
     # Resume execution and check for next interrupt
     current_result = graph.invoke(human_response, config=config)
+
 
 print_formatted_result(current_result)
