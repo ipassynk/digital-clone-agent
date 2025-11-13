@@ -18,9 +18,7 @@ Checking availability for 2025-11-15T11:00:00
 Booking meeting for 2025-11-15T11:00:00 with Anna Banana at anna@banana.com
 
 Question: My son struggles with tennis shots, what should I do?
-
 Booking Details: Meeting booked for 2025-11-15T11:00:00 with Anna Banana at anna@banana.com
-
 Teacher will address your question in the meeting.
 </pre>
 
