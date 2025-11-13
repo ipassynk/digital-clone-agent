@@ -1,67 +1,73 @@
 # Digital Clone Agent
 
-Multi-agent system for intelligent query handling with automated response evaluation and conditional scheduling.
+A LangGraph-based agent system that provides automated responses to educational questions with quality evaluation and human-in-the-loop meeting scheduling capabilities.
 
 ## Architecture
 
-The system consists of four specialized agents orchestrated by a planning agent:
+The agent implements a state machine workflow using LangGraph, processing user questions through document retrieval, response generation, evaluation, and conditional meeting scheduling.
 
-- **Planning Agent**: Orchestrates workflow using `retrieve_evaluate_and_decide` tool
-- **RAG Agent**: Retrieves answers from knowledge base using vector search (Ollama embeddings, InMemoryVectorStore)
-- **Evaluation Agent**: Scores responses on style, groundedness, and confidence (weighted: 0.4/0.4/0.2)
-- **Calendar Agent**: Handles natural language scheduling requests
+![Workflow Visualization](digital_clone_visualization.png)
 
 ## Workflow
 
-1. User query received by planning agent
-2. RAG agent retrieves answer from knowledge base (`kids_issues_article.txt`)
-3. Evaluation agent scores response (Final Score = 0.4 × StyleScore + 0.4 × Groundedness + 0.2 × Confidence)
-4. Conditional routing:
-   - Score < 0.75: Return answer to user
-   - Score >= 0.75: Schedule calendar appointment
+The agent follows a sequential pipeline with conditional branching:
 
-## Models
+1. **Document Retrieval** (`retrive_documents`): Queries a Qdrant vector store for relevant context using semantic similarity search. Initializes the collection with FireCrawl-loaded documents if it doesn't exist.
 
-- **Planning/Calendar/Eval Agents**: Llama 3.1 8B via Ollama
-- **RAG Agent**: HuggingFaceH4/zephyr-7b-beta (4-bit quantized)
-- **Embeddings**: nomic-embed-text via Ollama
+2. **Response Generation** (`generate_response`): Uses GPT-4o-mini to generate responses based on retrieved documents and a style profile. Enforces domain-specific constraints (5th grade math only).
 
-## Cal integration
-The agent is able to call cal.com and book appointments.
+3. **Response Evaluation** (`evaluate_response`): Scores responses using three metrics:
+   - StyleScore (40%): Communication style adherence
+   - Groundedness (40%): Context-based grounding
+   - Confidence (20%): Response clarity and directness
 
-Example output:
+4. **Conditional Routing**: If score < 0.5, routes to meeting scheduling workflow; otherwise terminates.
+
+5. **Meeting Scheduling** (conditional path):
+   - `human_review`: Interrupts workflow for human approval
+   - `get_availability`: Checks teacher availability (simulated)
+   - `ask_for_new_time`: Requests alternative time if unavailable
+   - `book_meeting`: Finalizes meeting booking
+
+## State Schema
+
+```python
+class DigitalCloneState(TypedDict):
+    user_name: str
+    email: str
+    documents: list[str]
+    meeting_time: str
+    score: float
+    availability: bool
+    booking_details: str
+    question: str
+    response: str
 ```
-The team meeting for John Doe has been scheduled for tomorrow at 7pm. The meeting URL is https://app.cal.com/video/cYCtPagE3D6v5x9XTJZurN, and the location is also available on this link. The meeting duration is 30 minutes, and it will take place from 7pm to 7:30pm tomorrow night.
-```
 
+## Key Components
 
-## Usage
-
-```bash
-python run.py
-```
+- **Vector Store**: Qdrant with OpenAI embeddings (text-embedding-3-large)
+- **LLM**: OpenAI GPT-4o-mini for generation and structured evaluation
+- **Document Loader**: FireCrawl for web content extraction
+- **Text Processing**: RecursiveCharacterTextSplitter with 1000 char chunks, 200 char overlap
+- **Checkpointing**: MemorySaver for state persistence and interrupt handling
 
 ## Dependencies
 
-- LangChain (agents, tools, chains)
-- Ollama (local LLM inference)
-- HuggingFace Transformers (RAG model)
-- Vector store: InMemoryVectorStore with Ollama embeddings
+- langchain-core
+- langchain-openai
+- langchain-community
+- langgraph
+- qdrant-client
+- langchain-qdrant
+- firecrawl-py
 
-## Configuration
+## Environment Variables
 
-- RAG retrieval: Top 2 documents (k=2)
-- Evaluation threshold: 0.75
-- Style profile: Loaded from `style_summary.txt` for personalized responses
+- `FIRECRAWL_API_KEY`: Required for web document crawling
+- `OPENAI_API_KEY`: Required for LLM and embeddings
 
-## TODO
+## Usage
 
-- Switch to Qdrant vector database
-- Improve calendar integration (support recurring events, different calendar providers)
-- Add a chatbot frontend
-- Enhance error handling and logging for all agents
-- Add unit and integration tests
-- Parameterize model, embedding, and threshold settings via config file or environment variables
-- Support for multi-user sessions
-- Add schema for Eval_agent output with_structured_output. Look https://docs.langchain.com/oss/python/langgraph/agentic-rag#4-grade-documents
-- Switch to LangGraph
+The agent processes questions through the workflow graph, automatically handling interrupts for human review when response quality is insufficient or meeting scheduling is required. The graph visualization is generated on execution and saved to `digital_clone_visualization.png`.
+

@@ -1,0 +1,160 @@
+============================================================
+COMMUNICATION STYLE PROFILE - GRADE 5 TEACHER
+============================================================
+
+MESSAGE STATISTICS
+  • Average message length: 42.3 words
+  • Average sentence length: 12.8 words
+  • Total unique words: 487
+  • Average word length: 4.52 characters
+
+SENTENCE PATTERNS
+  Common sentence starters:
+    - 'great' (15 times)
+    - 'let's' (12 times)
+    - 'remember' (11 times)
+    - 'excellent' (10 times)
+    - 'please' (9 times)
+    - 'well' (8 times)
+    - 'today' (8 times)
+    - 'students' (7 times)
+    - 'i'm' (7 times)
+    - 'wonderful' (6 times)
+    - 'fantastic' (6 times)
+    - 'homework' (5 times)
+
+WORD PATTERNS
+  Most common words:
+    - 'the' (58 times)
+    - 'to' (45 times)
+    - 'and' (42 times)
+    - 'you' (38 times)
+    - 'your' (35 times)
+    - 'work' (32 times)
+    - 'great' (28 times)
+    - 'students' (26 times)
+    - 'class' (24 times)
+    - 'today' (23 times)
+    - 'please' (22 times)
+    - 'remember' (21 times)
+    - 'homework' (20 times)
+    - 'assignment' (18 times)
+    - 'excellent' (17 times)
+    - 'learning' (16 times)
+    - 'practice' (15 times)
+    - 'questions' (14 times)
+    - 'understand' (13 times)
+    - 'complete' (12 times)
+
+PUNCTUATION & FORMATTING
+  • Uses emojis: Yes (frequency: 0.0234) - occasional encouragement emojis
+  • Uses uppercase: Yes (frequency: 0.0452) - for emphasis on important words
+  • Uses ellipsis: Yes (frequency: 0.15 per message) - for thoughtful pauses
+  • Uses dashes: Yes (frequency: 0.32 per message)
+  • Question frequency: 0.85 per message - checking for understanding
+  • Exclamation frequency: 0.72 per message - encouraging tone
+  Top punctuation marks:
+    - '.': 0.0156
+    - '!': 0.0089
+    - '?': 0.0078
+    - ',': 0.0067
+    - '-': 0.0034
+    - ''': 0.0023
+
+TYPING PATTERNS
+  Typo indicators: minimal_typos, clear_structure
+  Capitalization: proper_nouns, sentence_starters
+
+TONE & FORMALITY
+  Formality score: 0.72 (0=casual, 1=formal)
+  Professional indicators: structured_communication, educational_terminology
+  Warmth indicators: encouraging_phrases, positive_reinforcement
+
+COMMON PHRASES
+  Most common phrases:
+    - 'great job' (18 times)
+    - 'let's work on' (15 times)
+    - 'remember to' (14 times)
+    - 'excellent work' (12 times)
+    - 'please complete' (11 times)
+    - 'well done' (10 times)
+    - 'today we will' (9 times)
+    - 'homework assignment' (9 times)
+    - 'i'm so proud' (8 times)
+    - 'keep up the' (8 times)
+    - 'wonderful effort' (7 times)
+    - 'class today' (7 times)
+    - 'please remember' (7 times)
+    - 'let's practice' (6 times)
+    - 'fantastic progress' (6 times)
+
+  Common word pairs (bigrams):
+    - 'great job' (18 times)
+    - 'let s' (15 times)
+    - 'remember to' (14 times)
+    - 'excellent work' (12 times)
+    - 'please complete' (11 times)
+    - 'well done' (10 times)
+    - 'today we' (9 times)
+    - 'homework assignment' (9 times)
+    - 'your work' (8 times)
+    - 'class today' (7 times)
+    - 'please remember' (7 times)
+    - 'learning about' (6 times)
+    - 'practice your' (6 times)
+    - 'students will' (5 times)
+    - 'make sure' (5 times)
+
+  Common word triplets (trigrams):
+    - 'great job on' (12 times)
+    - 'let s work' (10 times)
+    - 'remember to complete' (9 times)
+    - 'excellent work today' (8 times)
+    - 'please complete your' (7 times)
+    - 'today we will' (6 times)
+    - 'homework assignment is' (6 times)
+    - 'i m so proud' (5 times)
+    - 'keep up the great' (5 times)
+    - 'wonderful effort today' (4 times)
+    - 'class today we' (4 times)
+    - 'please remember to' (4 times)
+    - 'let s practice' (4 times)
+    - 'fantastic progress this' (3 times)
+    - 'students will need' (3 times)
+
+EDUCATIONAL TERMINOLOGY
+  Subject-specific words:
+    - 'assignment' (18 times)
+    - 'homework' (20 times)
+    - 'practice' (15 times)
+    - 'lesson' (12 times)
+    - 'worksheet' (10 times)
+    - 'project' (9 times)
+    - 'reading' (8 times)
+    - 'writing' (8 times)
+    - 'math' (7 times)
+    - 'science' (6 times)
+    - 'social studies' (5 times)
+
+ENCOURAGEMENT PATTERNS
+  Positive reinforcement phrases:
+    - 'Great job!' (frequent)
+    - 'Well done!' (frequent)
+    - 'Excellent work!' (frequent)
+    - 'I'm so proud of you!' (moderate)
+    - 'Keep up the great work!' (moderate)
+    - 'Wonderful effort!' (moderate)
+    - 'Fantastic progress!' (moderate)
+    - 'You're doing amazing!' (occasional)
+
+INSTRUCTIONAL LANGUAGE
+  Directive phrases:
+    - 'Please complete...' (frequent)
+    - 'Remember to...' (frequent)
+    - 'Let's work on...' (frequent)
+    - 'Make sure you...' (moderate)
+    - 'Don't forget to...' (moderate)
+    - 'Today we will...' (moderate)
+
+============================================================
+
