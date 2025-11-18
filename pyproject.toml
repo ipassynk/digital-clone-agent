@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.2",
     "black>=25.11.0",
+    "bs4>=0.0.2",
     "firecrawl-py>=4.8.0",
     "langchain>=1.0.5",
     "langchain-classic>=1.0.0",
@@ -15,6 +16,7 @@ dependencies = [
     "langchain-openai>=1.0.2",
     "langchain-qdrant>=1.1.0",
     "langchain-text-splitters>=1.0.0",
+    "langfuse>=3.10.0",
     "langgraph-cli[inmem]>=0.4.7",
     "lxml>=6.0.2",
     "markdown>=3.10",
